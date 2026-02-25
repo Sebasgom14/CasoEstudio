@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org">
+
+    <head th:replace="~{general/fragmentos :: head}">
+        <title>Salas</title>
+    </head>
+
+    <body>
+
+        <header th:replace="~{general/fragmentos :: header}"></header>
+
+        <main class="container my-4">
+
+            <!-- Alertas -->
+            <div th:if="${todoOk}" class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+                <i class="fa-solid fa-circle-check"></i> <strong>Éxito:</strong> [[${todoOk}]]
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+
+            <div th:if="${error}" class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+                <i class="fa-solid fa-triangle-exclamation"></i> <strong>Error:</strong> [[${error}]]
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+
+            <!-- Título -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3 class="mb-0">
+                    <i class="fa-solid fa-house-chimney-user text-primary"></i> Gestión de Salas
+                    <span class="badge bg-secondary ms-2" th:text="${totalSalas}">0</span>
+                </h3>
+
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#salaModal"
+                        onclick="prepararNuevo()">
+                    <i class="fa-solid fa-plus"></i> Nueva Sala
+                </button>
+            </div>
+
+            <!-- Tabla -->
+            <div class="card shadow-sm">
+                <div class="card-body p-0">
+                    <table class="table table-striped table-hover align-middle mb-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th class="ps-3">#</th>
+                                <th>Nombre</th>
+                                <th class="text-center">Capacidad</th>
+                                <th class="text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:if="${salas == null or salas.empty}">
+                                <td colspan="4" class="text-center text-muted py-4">
+                                    <i class="fa-solid fa-inbox fa-2x d-block mb-2"></i>
+                                    No hay salas registradas.
+                                </td>
+                            </tr>
+
+                            <tr th:each="s : ${salas}">
+                                <td class="ps-3 fw-bold text-muted">[[${s.id}]]</td>
+                                <td class="fw-semibold">[[${s.nombre}]]</td>
+                                <td class="text-center">
+                                    <span class="badge bg-primary rounded-pill">[[${s.capacidad}]]</span>
+                                </td>
+                                <td class="text-center">
+                                    <button class="btn btn-warning btn-sm me-1"
+                                            data-bs-toggle="modal" data-bs-target="#salaModal"
+                                            th:attr="data-id=${s.id},
+                                            data-nombre=${s.nombre},
+                                            data-capacidad=${s.capacidad}"
+                                            onclick="prepararEditar(this)">
+                                        <i class="fa-solid fa-pencil"></i> Editar
+                                    </button>
+
+                                    <button class="btn btn-danger btn-sm"
+                                            th:attr="data-id=${s.id}, data-nombre=${s.nombre}"
+                                            onclick="confirmarEliminar(this)">
+                                        <i class="fa-solid fa-trash"></i> Eliminar
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- Modal -->
+        <div class="modal fade" id="salaModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form id="formSala" th:action="@{/sala/guardar}" method="post" class="needs-validation" novalidate>
+
+                        <input type="hidden" id="idSala" name="id"/>
+
+                        <div class="modal-header bg-primary text-white">
+                            <h5 class="modal-title">
+                                <i class="fa-solid fa-house-chimney-user"></i>
+                                <span id="modalTitulo">Nueva Sala</span>
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white"
+                                    data-bs-dismiss="modal"></button>
+                        </div>
+
+                        <div class="modal-body">
+
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Nombre</label>
+                                <input type="text" id="nombre" name="nombre"
+                                       class="form-control" required/>
+                                <div class="invalid-feedback">El nombre es obligatorio.</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Capacidad</label>
+                                <input type="number" id="capacidad" name="capacidad"
+                                       class="form-control" min="1" required/>
+                                <div class="invalid-feedback">Capacidad mínima 1.</div>
+                            </div>
+
+                        </div>
+
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary"
+                                    data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-primary">Guardar</button>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <form id="formEliminar" th:action="@{/sala/eliminar}" method="post" class="d-none">
+            <input type="hidden" id="idSalaEliminar" name="idSala"/>
+        </form>
+
+        <footer th:replace="~{general/fragmentos :: footer}"></footer>
+
+        <script>
+            function prepararNuevo() {
+                document.getElementById('modalTitulo').textContent = 'Nueva Sala';
+                document.getElementById('idSala').value = '';
+                document.getElementById('nombre').value = '';
+                document.getElementById('capacidad').value = '';
+                document.getElementById('formSala').classList.remove('was-validated');
+            }
+
+            function prepararEditar(btn) {
+                document.getElementById('modalTitulo').textContent = 'Editar Sala';
+                document.getElementById('idSala').value = btn.dataset.id;
+                document.getElementById('nombre').value = btn.dataset.nombre;
+                document.getElementById('capacidad').value = btn.dataset.capacidad;
+                document.getElementById('formSala').classList.remove('was-validated');
+            }
+
+            function confirmarEliminar(btn) {
+                const id = btn.dataset.id;
+                const nombre = btn.dataset.nombre;
+
+                Swal.fire({
+                    title: '¿Eliminar sala?',
+                    text: 'Se eliminará la sala ' + nombre,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc3545',
+                    confirmButtonText: 'Sí, eliminar'
+                }).then(result => {
+                    if (result.isConfirmed) {
+                        document.getElementById('idSalaEliminar').value = id;
+                        document.getElementById('formEliminar').submit();
+                    }
+                });
+            }
+
+            document.addEventListener('DOMContentLoaded', () => {
+                const form = document.getElementById('formSala');
+                form.addEventListener('submit', e => {
+                    if (!form.checkValidity()) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }
+                    form.classList.add('was-validated');
+                });
+            });
+        </script>
+
+    </body>
+</html>

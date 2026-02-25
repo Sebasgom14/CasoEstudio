@@ -1,0 +1,256 @@
+<!-- src/main/resources/templates/reunion/listado.html -->
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="~{general/fragmentos :: head}">
+    <title>Reuniones</title>
+</head>
+
+<body>
+
+<header th:replace="~{general/fragmentos :: header}"></header>
+
+<main class="container my-4">
+
+    <!-- Alertas -->
+    <div th:if="${todoOk}" class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+        <i class="fa-solid fa-circle-check"></i> <strong>Éxito:</strong> [[${todoOk}]]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+        <i class="fa-solid fa-triangle-exclamation"></i> <strong>Error:</strong> [[${error}]]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <!-- Encabezado -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="mb-0">
+            <i class="fa-solid fa-people-roof text-primary"></i> Gestión de Reuniones
+            <span class="badge bg-secondary ms-2" th:text="${totalReuniones}">0</span>
+        </h3>
+
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#reunionModal"
+                onclick="prepararNuevo()">
+            <i class="fa-solid fa-plus"></i> Nueva Reunión
+        </button>
+    </div>
+
+    <!-- Tabla -->
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <table class="table table-striped table-hover align-middle mb-0">
+                <thead class="table-dark">
+                <tr>
+                    <th class="ps-3">#</th>
+                    <th>Título</th>
+                    <th class="text-center">Fecha</th>
+                    <th class="text-center">Hora</th>
+                    <th>Sala</th>
+                    <th class="text-center">Acciones</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${reuniones == null or reuniones.empty}">
+                    <td colspan="6" class="text-center text-muted py-4">
+                        <i class="fa-solid fa-inbox fa-2x d-block mb-2"></i>
+                        No hay reuniones registradas.
+                    </td>
+                </tr>
+
+                <tr th:each="r : ${reuniones}">
+                    <td class="ps-3 fw-bold text-muted">[[${r.id}]]</td>
+                    <td class="fw-semibold">[[${r.titulo}]]</td>
+                    <td class="text-center">[[${r.fecha}]]</td>
+                    <td class="text-center">
+                        <span class="badge bg-primary rounded-pill">[[${r.hora}]]</span>
+                    </td>
+                    <td>
+                        <span class="badge bg-info text-dark">
+                            [[${r.sala != null ? r.sala.nombre : '—'}]]
+                        </span>
+                    </td>
+                    <td class="text-center">
+                        <!-- Editar -->
+                        <button class="btn btn-warning btn-sm me-1"
+                                data-bs-toggle="modal" data-bs-target="#reunionModal"
+                                th:attr="data-id=${r.id},
+                                         data-titulo=${r.titulo},
+                                         data-fecha=${r.fecha},
+                                         data-hora=${r.hora},
+                                         data-salaid=${r.sala != null ? r.sala.id : ''}"
+                                onclick="prepararEditar(this)">
+                            <i class="fa-solid fa-pencil"></i> Editar
+                        </button>
+                        <!-- Eliminar -->
+                        <button class="btn btn-danger btn-sm"
+                                th:attr="data-id=${r.id}, data-titulo=${r.titulo}"
+                                onclick="confirmarEliminar(this)">
+                            <i class="fa-solid fa-trash"></i> Eliminar
+                        </button>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</main>
+
+<!-- Modal -->
+<div class="modal fade" id="reunionModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+
+            <form id="formReunion" th:action="@{/reunion/guardar}" method="post"
+                  class="needs-validation" novalidate>
+
+                <input type="hidden" id="idReunion" name="id"/>
+
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">
+                        <i class="fa-solid fa-people-roof"></i>
+                        <span id="modalTitulo">Nueva Reunión</span>
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white"
+                            data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="row g-3">
+
+                        <!-- Título -->
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">
+                                Título <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" id="titulo" name="titulo"
+                                   class="form-control" maxlength="150" required/>
+                            <div class="invalid-feedback">El título es obligatorio.</div>
+                        </div>
+
+                        <!-- Fecha -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">
+                                Fecha <span class="text-danger">*</span>
+                            </label>
+                            <input type="date" id="fecha" name="fecha"
+                                   class="form-control" required/>
+                            <div class="invalid-feedback">La fecha es obligatoria.</div>
+                        </div>
+
+                        <!-- Hora -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">
+                                Hora <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" id="hora" name="hora"
+                                   class="form-control" placeholder="HH:mm" maxlength="10" required/>
+                            <div class="invalid-feedback">La hora es obligatoria.</div>
+                        </div>
+
+                        <!-- Sala -->
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">
+                                Sala <span class="text-danger">*</span>
+                            </label>
+                            <select id="idSala" name="idSala" class="form-select" required>
+                                <option value="">-- Seleccione --</option>
+                                <option th:each="s : ${salas}"
+                                        th:value="${s.id}"
+                                        th:text="${s.nombre}">
+                                </option>
+                            </select>
+                            <div class="invalid-feedback">Debe seleccionar una sala.</div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary"
+                            data-bs-dismiss="modal">
+                        <i class="fa-solid fa-xmark"></i> Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fa-solid fa-floppy-disk"></i> Guardar
+                    </button>
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+</div>
+
+<form id="formEliminar" th:action="@{/reunion/eliminar}" method="post" class="d-none">
+    <input type="hidden" id="idReunionEliminar" name="idReunion"/>
+</form>
+
+<footer th:replace="~{general/fragmentos :: footer}"></footer>
+
+<script>
+    function prepararNuevo() {
+        document.getElementById('modalTitulo').textContent = 'Nueva Reunión';
+        document.getElementById('idReunion').value = '';
+        document.getElementById('titulo').value = '';
+        document.getElementById('fecha').value = '';
+        document.getElementById('hora').value = '';
+        document.getElementById('idSala').value = '';
+        document.getElementById('formReunion').classList.remove('was-validated');
+    }
+
+    function prepararEditar(btn) {
+        document.getElementById('modalTitulo').textContent = 'Editar Reunión';
+        document.getElementById('idReunion').value = btn.dataset.id || '';
+        document.getElementById('titulo').value = btn.dataset.titulo || '';
+        document.getElementById('fecha').value = btn.dataset.fecha || '';
+        document.getElementById('hora').value = btn.dataset.hora || '';
+        document.getElementById('idSala').value = btn.dataset.salaid || '';
+        document.getElementById('formReunion').classList.remove('was-validated');
+    }
+
+    function confirmarEliminar(btn) {
+        const id = btn.dataset.id;
+        const titulo = btn.dataset.titulo;
+
+        Swal.fire({
+            title: '¿Eliminar reunión?',
+            html: `¿Está seguro que desea eliminar la reunión <b>${titulo}</b>?<br>
+                   <small class="text-danger">Esta acción no se puede deshacer.</small>`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: '<i class="fa-solid fa-trash"></i> Sí, eliminar',
+            cancelButtonText: '<i class="fa-solid fa-xmark"></i> Cancelar',
+            reverseButtons: true
+        }).then(result => {
+            if (result.isConfirmed) {
+                document.getElementById('idReunionEliminar').value = id;
+                document.getElementById('formEliminar').submit();
+            }
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const form = document.getElementById('formReunion');
+        form.addEventListener('submit', e => {
+            if (!form.checkValidity()) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        });
+
+        setTimeout(() => {
+            document.querySelectorAll('.alert').forEach(el => {
+                bootstrap.Alert.getOrCreateInstance(el).close();
+            });
+        }, 4000);
+    });
+</script>
+
+</body>
+</html>
